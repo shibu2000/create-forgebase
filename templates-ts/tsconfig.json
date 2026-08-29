@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+
+    "sourceMap": true,
+    "declaration": false,
+    "removeComments": false,
+
+    // This config is for the editor, the linter and Jest, all of which need
+    // to see the tests. Emitting is the build config's job.
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "*.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "seed",
+  "description": "Idempotent bootstrap: creates every action the routes check for, an admin role granting them, and the first administrator.",
+  "requires": [
+    "core",
+    "user-role-action",
+    "services-password"
+  ],
+  "files": {
+    "templates-<lang>/seed.<ext>": "src/seed.<ext>"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "db:seed": "tsx src/seed.ts"
+  },
+  "js": {
+    "scripts": {
+      "db:seed": "node src/seed.js"
+    }
+  },
+  "env": [
+    {
+      "key": "ADMIN_EMAIL",
+      "value": "admin@example.com",
+      "comment": "First administrator's address"
+    },
+    {
+      "key": "ADMIN_PASSWORD",
+      "value": "change-me-immediately",
+      "comment": "Change this before running the seed in any shared environment"
+    },
+    {
+      "key": "ADMIN_ROLE_NAME",
+      "value": "admin",
+      "comment": "Name of the role granted every action"
+    }
+  ],
+  "routes": []
+}

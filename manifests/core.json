@@ -1,0 +1,109 @@
+{
+  "name": "core",
+  "description": "Express bootstrap: security middleware, Pino logging with redaction, zod-validated env, centralised error handling, health endpoints, graceful shutdown.",
+  "required": true,
+  "files": {
+    "templates-<lang>/core": "src/core",
+    "templates-<lang>/tsconfig.json": "tsconfig.json",
+    "templates-<lang>/tsconfig.build.json": "tsconfig.build.json",
+    "templates-<lang>/gitignore": ".gitignore"
+  },
+  "dependencies": {
+    "cors": "2.8.6",
+    "dotenv": "17.4.2",
+    "express": "5.2.1",
+    "express-rate-limit": "8.7.0",
+    "helmet": "8.3.0",
+    "pino": "10.3.1",
+    "pino-http": "11.0.0",
+    "zod": "4.5.2"
+  },
+  "devDependencies": {
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/node": "26.4.0",
+    "pino-pretty": "13.1.3",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3"
+  },
+  "scripts": {
+    "dev": "tsx watch src/core/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/core/server.js"
+  },
+  "js": {
+    "files": {
+      "templates-<lang>/tsconfig.json": null,
+      "templates-<lang>/tsconfig.build.json": null
+    },
+    "scripts": {
+      "dev": "node --watch src/core/server.js",
+      "build": null,
+      "start": "node src/core/server.js"
+    },
+    "devDependencies": {
+      "@types/cors": null,
+      "@types/express": null,
+      "@types/node": null,
+      "tsx": null,
+      "typescript": null
+    }
+  },
+  "env": [
+    {
+      "key": "NODE_ENV",
+      "value": "development",
+      "comment": "development | test | production"
+    },
+    {
+      "key": "PORT",
+      "value": "3000",
+      "comment": "HTTP port to bind"
+    },
+    {
+      "key": "HOST",
+      "value": "0.0.0.0",
+      "comment": "Interface to bind"
+    },
+    {
+      "key": "LOG_LEVEL",
+      "value": "info",
+      "comment": "fatal | error | warn | info | debug | trace | silent"
+    },
+    {
+      "key": "CORS_ORIGINS",
+      "value": "http://localhost:5173",
+      "comment": "Comma-separated allowed origins. Empty denies all cross-origin browser traffic."
+    },
+    {
+      "key": "BODY_LIMIT",
+      "value": "10kb",
+      "comment": "Maximum accepted request body size"
+    },
+    {
+      "key": "TRUST_PROXY",
+      "value": "false",
+      "comment": "true | false | hop count | comma-separated trusted addresses"
+    },
+    {
+      "key": "RATE_LIMIT_WINDOW_MS",
+      "value": "900000",
+      "comment": "Rate limit window for auth endpoints (15 minutes)"
+    },
+    {
+      "key": "RATE_LIMIT_MAX",
+      "value": "10",
+      "comment": "Max requests per window per IP on auth endpoints"
+    },
+    {
+      "key": "SHUTDOWN_TIMEOUT_MS",
+      "value": "10000",
+      "comment": "Grace period for in-flight requests during shutdown"
+    }
+  ],
+  "routes": [],
+  "notes": [
+    "Every version here is pinned exactly and is the newest the toolchain accepts.",
+    "typescript is held at 6.0.3 rather than the latest 7.0.2 on purpose: typescript-eslint declares `typescript >=4.8.4 <6.1.0` and ts-jest declares `>=4.3 <7`, so TypeScript 7 would break type-aware linting and the test transform. Revisit once both raise those bounds."
+  ]
+}

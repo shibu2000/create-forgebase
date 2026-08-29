@@ -1,0 +1,50 @@
+{
+  "name": "docs",
+  "label": "API documentation (OpenAPI + Swagger UI)",
+  "description": "An OpenAPI 3.1 document generated from the routes the service actually mounts, served with Swagger UI at /docs and as JSON at /docs/openapi.json.",
+  "requires": [
+    "core",
+    "user-role-action"
+  ],
+  "files": {
+    "templates-<lang>/docs": "src/docs"
+  },
+  "dependencies": {
+    "swagger-ui-express": "5.0.1"
+  },
+  "devDependencies": {
+    "@types/swagger-ui-express": "4.1.8"
+  },
+  "scripts": {},
+  "js": {
+    "devDependencies": {
+      "@types/swagger-ui-express": null
+    }
+  },
+  "register": {
+    "imports": [
+      {
+        "marker": "forgebase:app-imports",
+        "line": "import { createDocsRouter, docsEnabled } from '../docs/docs.route.js';"
+      }
+    ],
+    "statements": [
+      {
+        "marker": "forgebase:routes",
+        "line": "if (docsEnabled()) app.use('/docs', createDocsRouter({ title: 'API', version: '0.1.0' }));"
+      }
+    ]
+  },
+  "env": [
+    {
+      "key": "DOCS_ENABLED",
+      "value": "true",
+      "comment": "Serve Swagger UI at /docs. Defaults to on outside production."
+    }
+  ],
+  "routes": [],
+  "notes": [
+    "The document is generated from the mounted routers, the zod schemas passed to validate(), and the action passed to authorize() — nothing is hand-written, so it cannot drift from the code.",
+    "Response bodies are described by the shared envelope; per-endpoint response schemas are the natural next step."
+  ]
+}

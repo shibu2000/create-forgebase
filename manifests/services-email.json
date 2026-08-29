@@ -1,0 +1,60 @@
+{
+  "name": "services-email",
+  "description": "SMTP delivery via Nodemailer, provider-agnostic, with a log-only fallback when SMTP is not configured.",
+  "requires": [
+    "core"
+  ],
+  "files": {
+    "templates-<lang>/services/email": "src/services/email"
+  },
+  "dependencies": {
+    "nodemailer": "9.0.6"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "8.0.1"
+  },
+  "scripts": {},
+  "js": {
+    "devDependencies": {
+      "@types/nodemailer": null
+    }
+  },
+  "env": [
+    {
+      "key": "SMTP_HOST",
+      "value": "",
+      "comment": "Leave blank to log emails instead of sending them"
+    },
+    {
+      "key": "SMTP_PORT",
+      "value": "587",
+      "comment": "587 for STARTTLS, 465 for implicit TLS"
+    },
+    {
+      "key": "SMTP_SECURE",
+      "value": "false",
+      "comment": "true only for port 465"
+    },
+    {
+      "key": "SMTP_USER",
+      "value": "",
+      "comment": "SMTP username"
+    },
+    {
+      "key": "SMTP_PASS",
+      "value": "",
+      "comment": "SMTP password"
+    },
+    {
+      "key": "MAIL_FROM",
+      "value": "no-reply@example.com",
+      "comment": "Envelope sender; must be verified with your provider"
+    },
+    {
+      "key": "APP_URL",
+      "value": "http://localhost:3000",
+      "comment": "Public base URL used to build links in email"
+    }
+  ],
+  "routes": []
+}

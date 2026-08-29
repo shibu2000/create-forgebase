@@ -1,0 +1,98 @@
+{
+  "name": "db-sequelize",
+  "description": "PostgreSQL via Sequelize: connection, pooling, boot-time retry, readiness probe, Umzug migrations, models and repository implementations — all under src/db.",
+  "orm": "sequelize",
+  "requires": [
+    "core"
+  ],
+  "files": {
+    "templates-<lang>/db": "src/db",
+    "templates-<lang>/sequelize/db": "src/db"
+  },
+  "dependencies": {
+    "pg": "8.23.0",
+    "pg-hstore": "2.3.4",
+    "sequelize": "6.37.8",
+    "umzug": "3.8.3"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
+  },
+  "scripts": {
+    "db:migrate": "tsx src/db/migrator.ts up",
+    "db:migrate:undo": "tsx src/db/migrator.ts down",
+    "db:migrate:status": "tsx src/db/migrator.ts pending"
+  },
+  "js": {
+    "scripts": {
+      "db:migrate": "node src/db/migrator.js up",
+      "db:migrate:undo": "node src/db/migrator.js down",
+      "db:migrate:status": "node src/db/migrator.js pending"
+    },
+    "devDependencies": {
+      "@types/pg": null
+    }
+  },
+  "register": {
+    "imports": [
+      {
+        "marker": "forgebase:boot-imports",
+        "line": "import { registerDatabase } from '../db/connection.js';"
+      }
+    ],
+    "statements": [
+      {
+        "marker": "forgebase:boot-registrations",
+        "line": "registerDatabase();"
+      }
+    ]
+  },
+  "env": [
+    {
+      "key": "DATABASE_URL",
+      "value": "postgres://postgres:postgres@localhost:5432/app_development",
+      "comment": "PostgreSQL connection string"
+    },
+    {
+      "key": "DB_POOL_MIN",
+      "value": "0",
+      "comment": "Minimum pooled connections"
+    },
+    {
+      "key": "DB_POOL_MAX",
+      "value": "10",
+      "comment": "Maximum pooled connections"
+    },
+    {
+      "key": "DB_POOL_ACQUIRE_TIMEOUT_MS",
+      "value": "30000",
+      "comment": "Wait for a free connection before failing"
+    },
+    {
+      "key": "DB_POOL_IDLE_TIMEOUT_MS",
+      "value": "10000",
+      "comment": "Release a connection after this much idle time"
+    },
+    {
+      "key": "DB_SSL",
+      "value": "false",
+      "comment": "Enable TLS — required by most managed providers"
+    },
+    {
+      "key": "DB_LOGGING",
+      "value": "false",
+      "comment": "Log every SQL statement"
+    },
+    {
+      "key": "DB_CONNECT_RETRIES",
+      "value": "5",
+      "comment": "Boot-time connection attempts before giving up"
+    },
+    {
+      "key": "DB_CONNECT_RETRY_DELAY_MS",
+      "value": "1000",
+      "comment": "Base delay between connection attempts (grows linearly)"
+    }
+  ],
+  "routes": []
+}

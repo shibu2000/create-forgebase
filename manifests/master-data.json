@@ -1,0 +1,119 @@
+{
+  "name": "master-data",
+  "label": "Master Data",
+  "description": "Generic type/item reference data: one CRUD surface serving every lookup list a project needs, with no migration per list.",
+  "requires": [
+    "core",
+    "auth"
+  ],
+  "requiresOneOf": [
+    "db-sequelize",
+    "db-drizzle"
+  ],
+  "files": {
+    "templates-<lang>/modules/master-data": "src/modules/master-data"
+  },
+  "region": "master-data",
+  "tests": [
+    "tests/unit/master-data.service.test.<ext>",
+    "tests/integration/master-data.test.<ext>"
+  ],
+  "variants": {
+    "sequelize": {
+      "models": [
+        "master-data.model.<ext>"
+      ],
+      "repositories": [
+        "master-data.repository.<ext>"
+      ],
+      "migrations": {
+        "templates-<lang>/sequelize/db/migrations/20260101000200-create-master-data.<ext>": "src/db/migrations/20260101000200-create-master-data.<ext>"
+      }
+    },
+    "drizzle": {
+      "models": [
+        "master-data.model.<ext>"
+      ],
+      "repositories": [
+        "master-data.repository.<ext>"
+      ],
+      "migrations": {
+        "templates-<lang>/drizzle/db/migrations/0002_master_data.sql": "src/db/migrations/0002_master_data.sql"
+      }
+    }
+  },
+  "seedActions": [
+    {
+      "name": "master-data:read",
+      "description": "View reference data"
+    },
+    {
+      "name": "master-data:create",
+      "description": "Create reference data"
+    },
+    {
+      "name": "master-data:update",
+      "description": "Modify reference data"
+    },
+    {
+      "name": "master-data:delete",
+      "description": "Delete reference data"
+    }
+  ],
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {},
+  "env": [],
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/master-data/types",
+      "action": "master-data:read"
+    },
+    {
+      "method": "POST",
+      "path": "/master-data/types",
+      "action": "master-data:create"
+    },
+    {
+      "method": "GET",
+      "path": "/master-data/types/:code",
+      "action": "master-data:read"
+    },
+    {
+      "method": "PATCH",
+      "path": "/master-data/types/:code",
+      "action": "master-data:update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/master-data/types/:code",
+      "action": "master-data:delete"
+    },
+    {
+      "method": "GET",
+      "path": "/master-data/types/:code/items",
+      "action": "master-data:read"
+    },
+    {
+      "method": "POST",
+      "path": "/master-data/types/:code/items",
+      "action": "master-data:create"
+    },
+    {
+      "method": "GET",
+      "path": "/master-data/types/:code/items/:itemCode",
+      "action": "master-data:read"
+    },
+    {
+      "method": "PATCH",
+      "path": "/master-data/types/:code/items/:itemCode",
+      "action": "master-data:update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/master-data/types/:code/items/:itemCode",
+      "action": "master-data:delete"
+    }
+  ]
+}

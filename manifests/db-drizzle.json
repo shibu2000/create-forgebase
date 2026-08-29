@@ -1,0 +1,98 @@
+{
+  "name": "db-drizzle",
+  "description": "PostgreSQL via Drizzle ORM: connection, pooling, boot-time retry, readiness probe, drizzle-kit migrations, schema and repository implementations — all under src/db.",
+  "orm": "drizzle",
+  "requires": [
+    "core"
+  ],
+  "files": {
+    "templates-<lang>/db": "src/db",
+    "templates-<lang>/drizzle/db": "src/db",
+    "templates-<lang>/drizzle/drizzle.config.<ext>": "src/drizzle.config.<ext>"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.10"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate --config src/drizzle.config.ts",
+    "db:migrate": "tsx src/db/migrator.ts",
+    "db:studio": "drizzle-kit studio --config src/drizzle.config.ts"
+  },
+  "js": {
+    "scripts": {
+      "db:generate": "drizzle-kit generate --config src/drizzle.config.js",
+      "db:migrate": "node src/db/migrator.js",
+      "db:studio": "drizzle-kit studio --config src/drizzle.config.js"
+    },
+    "devDependencies": {
+      "@types/pg": null
+    }
+  },
+  "register": {
+    "imports": [
+      {
+        "marker": "forgebase:boot-imports",
+        "line": "import { registerDatabase } from '../db/connection.js';"
+      }
+    ],
+    "statements": [
+      {
+        "marker": "forgebase:boot-registrations",
+        "line": "registerDatabase();"
+      }
+    ]
+  },
+  "env": [
+    {
+      "key": "DATABASE_URL",
+      "value": "postgres://postgres:postgres@localhost:5432/app_development",
+      "comment": "PostgreSQL connection string"
+    },
+    {
+      "key": "DB_POOL_MIN",
+      "value": "0",
+      "comment": "Minimum pooled connections"
+    },
+    {
+      "key": "DB_POOL_MAX",
+      "value": "10",
+      "comment": "Maximum pooled connections"
+    },
+    {
+      "key": "DB_POOL_ACQUIRE_TIMEOUT_MS",
+      "value": "30000",
+      "comment": "Wait for a free connection before failing"
+    },
+    {
+      "key": "DB_POOL_IDLE_TIMEOUT_MS",
+      "value": "10000",
+      "comment": "Release a connection after this much idle time"
+    },
+    {
+      "key": "DB_SSL",
+      "value": "false",
+      "comment": "Enable TLS — required by most managed providers"
+    },
+    {
+      "key": "DB_LOGGING",
+      "value": "false",
+      "comment": "Log every SQL statement"
+    },
+    {
+      "key": "DB_CONNECT_RETRIES",
+      "value": "5",
+      "comment": "Boot-time connection attempts before giving up"
+    },
+    {
+      "key": "DB_CONNECT_RETRY_DELAY_MS",
+      "value": "1000",
+      "comment": "Base delay between connection attempts (grows linearly)"
+    }
+  ],
+  "routes": []
+}

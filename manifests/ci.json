@@ -1,0 +1,24 @@
+{
+  "name": "ci",
+  "label": "GitHub Actions CI",
+  "description": "A workflow running lint, format, typecheck and the Testcontainers-backed test suite on every push and pull request.",
+  "requires": [
+    "core",
+    "testing",
+    "code-quality"
+  ],
+  "files": {
+    "templates-<lang>/.github": ".github",
+    "templates-<lang>/.nvmrc": ".nvmrc"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {},
+  "env": [],
+  "routes": [],
+  "notes": [
+    "The workflow needs package-lock.json committed; the .gitignore shipped by core deliberately does not exclude it.",
+    "No `services:` block: Testcontainers provisions and disposes of its own PostgreSQL, and hosted Ubuntu runners already have Docker.",
+    "JWT_ACCESS_SECRET is set inline as a throwaway CI value; every other variable either has a default or is supplied by the test harness."
+  ]
+}

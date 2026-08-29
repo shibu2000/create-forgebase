@@ -1,0 +1,171 @@
+{
+  "name": "user-role-action",
+  "label": "User / Role / Action",
+  "description": "Users, roles and actions (permissions) as three peer modules with many-to-many assignment and effective-permission resolution.",
+  "requires": [
+    "core",
+    "services-password"
+  ],
+  "requiresOneOf": [
+    "db-sequelize",
+    "db-drizzle"
+  ],
+  "modules": [
+    "user",
+    "role",
+    "action"
+  ],
+  "files": {
+    "templates-<lang>/modules/user": "src/modules/user",
+    "templates-<lang>/modules/role": "src/modules/role",
+    "templates-<lang>/modules/action": "src/modules/action",
+    "templates-<lang>/routes.<ext>": "src/routes.<ext>"
+  },
+  "variants": {
+    "sequelize": {
+      "migrations": {
+        "templates-<lang>/sequelize/db/migrations/20260101000000-create-user-role-action.<ext>": "src/db/migrations/20260101000000-create-user-role-action.<ext>"
+      },
+      "repositories": [
+        "user.repository.<ext>",
+        "role.repository.<ext>",
+        "action.repository.<ext>"
+      ],
+      "models": [
+        "user.model.<ext>",
+        "role.model.<ext>",
+        "action.model.<ext>"
+      ]
+    },
+    "drizzle": {
+      "migrations": {
+        "templates-<lang>/drizzle/db/migrations/0000_user_role_action.sql": "src/db/migrations/0000_user_role_action.sql"
+      },
+      "repositories": [
+        "user.repository.<ext>",
+        "role.repository.<ext>",
+        "action.repository.<ext>"
+      ],
+      "models": [
+        "user.model.<ext>",
+        "role.model.<ext>",
+        "action.model.<ext>"
+      ]
+    }
+  },
+  "register": {
+    "imports": [
+      {
+        "marker": "forgebase:app-imports",
+        "line": "import { createApiRouter } from '../routes.js';"
+      }
+    ],
+    "statements": [
+      {
+        "marker": "forgebase:routes",
+        "line": "mountRouter(app, '/', createApiRouter());"
+      }
+    ]
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {},
+  "env": [],
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/users",
+      "action": "user:read"
+    },
+    {
+      "method": "POST",
+      "path": "/users",
+      "action": "user:create"
+    },
+    {
+      "method": "GET",
+      "path": "/users/:id",
+      "action": "user:read"
+    },
+    {
+      "method": "PATCH",
+      "path": "/users/:id",
+      "action": "user:update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/users/:id",
+      "action": "user:delete"
+    },
+    {
+      "method": "PUT",
+      "path": "/users/:id/roles",
+      "action": "user:assign-role"
+    },
+    {
+      "method": "GET",
+      "path": "/users/:id/actions",
+      "action": "user:read"
+    },
+    {
+      "method": "GET",
+      "path": "/roles",
+      "action": "role:read"
+    },
+    {
+      "method": "POST",
+      "path": "/roles",
+      "action": "role:create"
+    },
+    {
+      "method": "GET",
+      "path": "/roles/:id",
+      "action": "role:read"
+    },
+    {
+      "method": "PATCH",
+      "path": "/roles/:id",
+      "action": "role:update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/roles/:id",
+      "action": "role:delete"
+    },
+    {
+      "method": "GET",
+      "path": "/roles/:id/actions",
+      "action": "role:read"
+    },
+    {
+      "method": "PUT",
+      "path": "/roles/:id/actions",
+      "action": "role:assign-action"
+    },
+    {
+      "method": "GET",
+      "path": "/actions",
+      "action": "action:read"
+    },
+    {
+      "method": "POST",
+      "path": "/actions",
+      "action": "action:create"
+    },
+    {
+      "method": "GET",
+      "path": "/actions/:id",
+      "action": "action:read"
+    },
+    {
+      "method": "PATCH",
+      "path": "/actions/:id",
+      "action": "action:update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/actions/:id",
+      "action": "action:delete"
+    }
+  ]
+}

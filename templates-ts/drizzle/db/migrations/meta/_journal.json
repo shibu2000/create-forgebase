@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1767225600000,
+      "tag": "0000_user_role_action",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767225660000,
+      "tag": "0001_auth_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767225720000,
+      "tag": "0002_master_data",
+      "breakpoints": true
+    }
+  ]
+}

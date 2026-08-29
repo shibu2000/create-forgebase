@@ -1,0 +1,49 @@
+{
+  "name": "code-quality",
+  "label": "ESLint + Prettier + Husky",
+  "description": "ESLint 9 flat config with type-aware rules that enforce the project's architectural boundaries, Prettier, and a pre-commit hook running both on staged files only.",
+  "requires": [
+    "core"
+  ],
+  "files": {
+    "templates-<lang>/eslint.config.js": "eslint.config.js",
+    "templates-<lang>/.prettierrc.json": ".prettierrc.json",
+    "templates-<lang>/.prettierignore": ".prettierignore",
+    "templates-<lang>/.lintstagedrc.json": ".lintstagedrc.json",
+    "templates-<lang>/.husky": ".husky"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.9.1",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import-x": "4.17.1",
+    "eslint-plugin-simple-import-sort": "14.0.0",
+    "globals": "17.11.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.4.1",
+    "prettier": "3.9.6",
+    "typescript-eslint": "8.68.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepare": "husky"
+  },
+  "js": {
+    "scripts": {
+      "typecheck": null
+    },
+    "devDependencies": {
+      "typescript-eslint": null
+    }
+  },
+  "env": [],
+  "routes": [],
+  "notes": [
+    "eslint.config.js declares the module list in MODULES; the CLI rewrites it to the modules actually installed."
+  ]
+}

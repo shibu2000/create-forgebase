@@ -1,0 +1,5 @@
+# Type errors are cheap to catch here and expensive to catch in CI.
+# `--if-present` because the JavaScript variant of this scaffold has no
+# typecheck script — and a hook that fails on a project without TypeScript
+# is a hook people delete.
+npm run typecheck --if-present

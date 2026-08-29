@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Generated from templates-ts by `npm run build:js`.
+# Never hand-edited, regenerated on install and before every publish.
+templates-js/
+
+# Packed tarballs from `npm pack`
+*.tgz
+
+# Logs and OS noise
+*.log
+npm-debug.log*
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# The original design brief — kept locally, not published.
+create-forgebase-build-prompt.md

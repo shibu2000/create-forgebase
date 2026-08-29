@@ -1,0 +1,66 @@
+{
+  "name": "create-forgebase",
+  "version": "0.1.0",
+  "description": "Scaffold a production-ready Express + PostgreSQL backend, in TypeScript or JavaScript, with Sequelize or Drizzle.",
+  "keywords": [
+    "create",
+    "scaffold",
+    "starter",
+    "boilerplate",
+    "generator",
+    "express",
+    "postgresql",
+    "postgres",
+    "rest-api",
+    "backend",
+    "typescript",
+    "sequelize",
+    "drizzle",
+    "jest",
+    "openapi"
+  ],
+  "license": "MIT",
+  "author": "Shibu Dhara",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shibu2000/create-forgebase.git"
+  },
+  "homepage": "https://github.com/shibu2000/create-forgebase#readme",
+  "bugs": {
+    "url": "https://github.com/shibu2000/create-forgebase/issues"
+  },
+  "type": "module",
+  "bin": {
+    "create-forgebase": "bin/create-forgebase.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "manifests",
+    "templates-ts",
+    "templates-js"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build:js": "node scripts/build-js-templates.mjs",
+    "prepare": "npm run build:js",
+    "verify:templates": "node scripts/verify-templates.mjs",
+    "test:matrix": "node scripts/test-matrix.mjs",
+    "test:matrix:deep": "node scripts/test-matrix.mjs --deep",
+    "check:publishable": "node scripts/check-publishable.mjs",
+    "prepublishOnly": "npm run build:js && npm run verify:templates && npm run check:publishable"
+  },
+  "dependencies": {
+    "@clack/prompts": "1.7.0",
+    "picocolors": "1.1.1"
+  },
+  "devDependencies": {
+    "@babel/core": "8.0.1",
+    "@babel/preset-typescript": "8.0.1",
+    "eslint": "10.9.1",
+    "eslint-plugin-simple-import-sort": "14.0.0",
+    "prettier": "3.9.6"
+  }
+}

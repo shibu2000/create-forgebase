@@ -1,0 +1,88 @@
+{
+  "name": "testing",
+  "label": "Testing (Jest + Supertest + Testcontainers)",
+  "description": "Jest configured for native-ESM TypeScript, with a root-level tests/ folder holding one unit test and one Supertest integration test per module, runnable immediately against a disposable PostgreSQL container.",
+  "requires": [
+    "core"
+  ],
+  "requiresOneOf": [
+    "db-sequelize",
+    "db-drizzle"
+  ],
+  "files": {
+    "templates-<lang>/tests": "tests",
+    "templates-<lang>/jest.config.<ext>": "jest.config.<ext>"
+  },
+  "variants": {
+    "sequelize": {
+      "files": {
+        "templates-<lang>/sequelize/db/testing.<ext>": "src/db/testing.<ext>"
+      }
+    },
+    "drizzle": {
+      "files": {
+        "templates-<lang>/drizzle/db/testing.<ext>": "src/db/testing.<ext>"
+      }
+    }
+  },
+  "testFiles": {
+    "unit": [
+      "templates-<lang>/tests/unit/user.service.test.<ext>",
+      "templates-<lang>/tests/unit/role.service.test.<ext>",
+      "templates-<lang>/tests/unit/action.service.test.<ext>",
+      "templates-<lang>/tests/unit/auth.service.test.<ext>",
+      "templates-<lang>/tests/unit/master-data.service.test.<ext>"
+    ],
+    "integration": [
+      "templates-<lang>/tests/integration/user.test.<ext>",
+      "templates-<lang>/tests/integration/role.test.<ext>",
+      "templates-<lang>/tests/integration/action.test.<ext>",
+      "templates-<lang>/tests/integration/auth.test.<ext>",
+      "templates-<lang>/tests/integration/master-data.test.<ext>"
+    ]
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@jest/globals": "30.5.0",
+    "@testcontainers/postgresql": "12.1.0",
+    "@types/supertest": "7.2.1",
+    "jest": "30.5.0",
+    "supertest": "7.2.2",
+    "testcontainers": "12.1.0",
+    "ts-jest": "29.4.12"
+  },
+  "scripts": {
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
+    "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest tests/integration",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:user": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/user.service.test.ts tests/integration/user.test.ts",
+    "test:role": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/role.service.test.ts tests/integration/role.test.ts",
+    "test:action": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/action.service.test.ts tests/integration/action.test.ts",
+    "test:auth": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/auth.service.test.ts tests/integration/auth.test.ts",
+    "test:master-data": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/master-data.service.test.ts tests/integration/master-data.test.ts"
+  },
+  "js": {
+    "scripts": {
+      "test:user": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/user.service.test.js tests/integration/user.test.js",
+      "test:role": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/role.service.test.js tests/integration/role.test.js",
+      "test:action": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/action.service.test.js tests/integration/action.test.js",
+      "test:auth": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/auth.service.test.js tests/integration/auth.test.js",
+      "test:master-data": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/master-data.service.test.js tests/integration/master-data.test.js"
+    },
+    "devDependencies": {
+      "@types/supertest": null,
+      "ts-jest": null
+    }
+  },
+  "env": [],
+  "routes": [],
+  "requiresDocker": true,
+  "notes": [
+    "Tests live in a root-level tests/ folder, one unit file and one Supertest integration file per module.",
+    "Every script sets NODE_OPTIONS=--experimental-vm-modules; calling `npx jest` directly without it fails with a confusing CommonJS error.",
+    "Per-module scripts name their files explicitly, because a bare `jest <module>` regex is matched against the absolute path.",
+    "The CLI emits test:<module> only for the modules actually installed."
+  ]
+}
