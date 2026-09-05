@@ -16,9 +16,9 @@ import {
 import { roleRepository } from './db/repositories/role.repository.js';
 import { userRepository } from './db/repositories/user.repository.js';
 import { createActionRouter } from './modules/action/action.route.js';
+import { createAuthController } from './modules/auth/auth.controller.js';
 import { createAuthGuards } from './modules/auth/auth.middleware.js';
 import { createAuthRouter } from './modules/auth/auth.route.js';
-import { createAuthService } from './modules/auth/auth.service.js';
 // forgebase:region:master-data start
 import { createMasterDataRouter } from './modules/master-data/master-data.route.js';
 // forgebase:region:master-data end
@@ -52,10 +52,10 @@ export function createApiRouter(): Router {
 
   const email = createEmailService();
 
-  // Built once and shared: the guards need the same service the auth routes
+  // Built once and shared: the guards need the same controller the auth routes
   // expose, so a token minted by `/auth/login` is resolved by the very same
   // code path that `authenticate` uses.
-  const authService = createAuthService({
+  const authController = createAuthController({
     users: userRepository,
     refreshTokens: refreshTokenRepository,
     resetTokens: passwordResetTokenRepository,
@@ -65,7 +65,7 @@ export function createApiRouter(): Router {
     appUrl: emailConfig.APP_URL,
   });
 
-  const guards = createAuthGuards(authService);
+  const guards = createAuthGuards(authController);
 
   mountRouter(
     router,

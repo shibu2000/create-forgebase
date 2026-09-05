@@ -3,8 +3,8 @@ import type { RequestHandler } from 'express';
 import type { AuthorizeFactory, RouteGuards } from '../../core/middleware/auth.types.js';
 import { annotate } from '../../core/middleware/route-metadata.js';
 
+import type { AuthController } from './auth.controller.js';
 import { forbidden, invalidAccessToken, missingCredentials } from './auth.errors.js';
-import type { AuthService } from './auth.service.js';
 import { verifyAccessToken } from './auth.tokens.js';
 import type { AuthenticatedUser } from './auth.types.js';
 
@@ -25,7 +25,7 @@ declare global {
 
 const BEARER = /^Bearer (.+)$/i;
 
-export function createAuthGuards(service: AuthService): RouteGuards {
+export function createAuthGuards(controller: AuthController): RouteGuards {
   /**
    * Verifies the access token, then loads the caller's identity and current
    * permissions from the database.
@@ -58,7 +58,7 @@ export function createAuthGuards(service: AuthService): RouteGuards {
 
     // A token can outlive the account it names: deleted, deactivated, or
     // simply gone since the token was minted.
-    const user = await service.loadAuthenticatedUser(userId);
+    const user = await controller.loadAuthenticatedUser(userId);
     if (!user) {
       next(invalidAccessToken());
       return;

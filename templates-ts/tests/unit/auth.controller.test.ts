@@ -1,22 +1,22 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { createAuthController } from '../../src/modules/auth/auth.controller.js';
 import type {
   AuthUserLookup,
   PasswordResetTokenRepository,
   RefreshTokenRepository,
 } from '../../src/modules/auth/auth.repository.interface.js';
-import { createAuthService } from '../../src/modules/auth/auth.service.js';
 import { hashToken } from '../../src/modules/auth/auth.tokens.js';
 import type { CreateTokenRecord } from '../../src/modules/auth/auth.types.js';
 import { fakeEmailService, fakeHasher, fakeUnitOfWork, repoOf } from '../helpers/mocks.js';
 
 /**
- * Unit tests for the security decisions in the auth service.
+ * Unit tests for the security decisions in the auth controller.
  *
  * The point of testing these with fakes is that each rule can be provoked
  * directly — an expired token, a revoked token, a deactivated account — where
  * arranging the same states against a real database would mean either
- * clock-skewing or reaching behind the service to write rows.
+ * clock-skewing or reaching behind the controller to write rows.
  */
 
 const account = {
@@ -26,7 +26,7 @@ const account = {
   isActive: true,
 };
 
-function buildService(
+function buildController(
   overrides: {
     users?: Partial<AuthUserLookup>;
     refreshTokens?: Partial<RefreshTokenRepository>;
@@ -75,7 +75,7 @@ function buildService(
     refreshTokens,
     resetTokens,
     mail,
-    service: createAuthService({
+    controller: createAuthController({
       users: repoOf(users),
       refreshTokens: repoOf(refreshTokens),
       resetTokens: repoOf(resetTokens),
@@ -87,16 +87,16 @@ function buildService(
   };
 }
 
-describe('createAuthService', () => {
+describe('createAuthController', () => {
   describe('login', () => {
     it('rejects an unknown account and a wrong password with the same error', async () => {
-      const unknown = buildService({ users: { findByEmail: jest.fn(async () => null) } });
-      const wrongPassword = buildService();
+      const unknown = buildController({ users: { findByEmail: jest.fn(async () => null) } });
+      const wrongPassword = buildController();
 
-      const a = await unknown.service
+      const a = await unknown.controller
         .login({ email: 'nobody@example.com', password: 'x' })
         .catch((error: unknown) => error);
-      const b = await wrongPassword.service
+      const b = await wrongPassword.controller
         .login({ email: 'ada@example.com', password: 'wrong' })
         .catch((error: unknown) => error);
 
@@ -105,9 +105,9 @@ describe('createAuthService', () => {
     });
 
     it('verifies a hash even when no account matches, so timing does not leak', async () => {
-      const { service } = buildService({ users: { findByEmail: jest.fn(async () => null) } });
+      const { controller } = buildController({ users: { findByEmail: jest.fn(async () => null) } });
 
-      await service.login({ email: 'nobody@example.com', password: 'x' }).catch(() => undefined);
+      await controller.login({ email: 'nobody@example.com', password: 'x' }).catch(() => undefined);
 
       // The work is what matters: without it, a missing account returns far
       // faster than a wrong password and the endpoint enumerates accounts.
@@ -116,21 +116,21 @@ describe('createAuthService', () => {
 
     it('refuses a deactivated account', async () => {
       const passwordHash = await fakeHasher.hash('correct password');
-      const { service } = buildService({
+      const { controller } = buildController({
         users: {
           findByEmail: jest.fn(async () => ({ ...account, passwordHash, isActive: false })),
         },
       });
 
       await expect(
-        service.login({ email: 'ada@example.com', password: 'correct password' }),
+        controller.login({ email: 'ada@example.com', password: 'correct password' }),
       ).rejects.toMatchObject({ code: 'ACCOUNT_INACTIVE' });
     });
   });
 
   describe('refresh', () => {
     it('revokes every session when a rotated token is presented again', async () => {
-      const { refreshTokens, service } = buildService({
+      const { refreshTokens, controller } = buildController({
         refreshTokens: {
           findByHash: jest.fn(async () => ({
             id: 'refresh-1',
@@ -141,7 +141,7 @@ describe('createAuthService', () => {
         },
       });
 
-      await expect(service.refresh({ refreshToken: 'stolen' })).rejects.toMatchObject({
+      await expect(controller.refresh({ refreshToken: 'stolen' })).rejects.toMatchObject({
         code: 'INVALID_REFRESH_TOKEN',
       });
 
@@ -149,7 +149,7 @@ describe('createAuthService', () => {
     });
 
     it('rejects an expired token without revoking anything', async () => {
-      const { refreshTokens, service } = buildService({
+      const { refreshTokens, controller } = buildController({
         refreshTokens: {
           findByHash: jest.fn(async () => ({
             id: 'refresh-1',
@@ -160,7 +160,7 @@ describe('createAuthService', () => {
         },
       });
 
-      await expect(service.refresh({ refreshToken: 'old' })).rejects.toMatchObject({
+      await expect(controller.refresh({ refreshToken: 'old' })).rejects.toMatchObject({
         code: 'INVALID_REFRESH_TOKEN',
       });
 
@@ -171,9 +171,9 @@ describe('createAuthService', () => {
 
   describe('forgotPassword', () => {
     it('stores only a hash of the token, never the token itself', async () => {
-      const { resetTokens, mail, service } = buildService();
+      const { resetTokens, mail, controller } = buildController();
 
-      await service.forgotPassword({ email: 'ada@example.com' });
+      await controller.forgotPassword({ email: 'ada@example.com' });
 
       const link = mail.sent[0]?.text ?? '';
       const token = /token=([A-Za-z0-9_-]+)/.exec(link)?.[1] ?? '';
@@ -185,25 +185,27 @@ describe('createAuthService', () => {
     });
 
     it('sends nothing for an unknown address, and does not report that', async () => {
-      const { mail, service } = buildService({ users: { findByEmail: jest.fn(async () => null) } });
+      const { mail, controller } = buildController({
+        users: { findByEmail: jest.fn(async () => null) },
+      });
 
       await expect(
-        service.forgotPassword({ email: 'nobody@example.com' }),
+        controller.forgotPassword({ email: 'nobody@example.com' }),
       ).resolves.toBeUndefined();
       expect(mail.sent).toHaveLength(0);
     });
 
     it('invalidates earlier reset links before issuing a new one', async () => {
-      const { resetTokens, service } = buildService();
+      const { resetTokens, controller } = buildController();
 
-      await service.forgotPassword({ email: 'ada@example.com' });
+      await controller.forgotPassword({ email: 'ada@example.com' });
       expect(resetTokens.invalidateAllForUser).toHaveBeenCalledWith('user-1');
     });
   });
 
   describe('resetPassword', () => {
     it('refuses a token that was already used', async () => {
-      const { service } = buildService({
+      const { controller } = buildController({
         resetTokens: {
           findByHash: jest.fn(async () => ({
             id: 'reset-1',
@@ -215,12 +217,12 @@ describe('createAuthService', () => {
       });
 
       await expect(
-        service.resetPassword({ token: 'used', password: 'a brand new password' }),
+        controller.resetPassword({ token: 'used', password: 'a brand new password' }),
       ).rejects.toMatchObject({ code: 'INVALID_RESET_TOKEN' });
     });
 
     it('revokes every session after a successful reset', async () => {
-      const { refreshTokens, service } = buildService({
+      const { refreshTokens, controller } = buildController({
         resetTokens: {
           findByHash: jest.fn(async () => ({
             id: 'reset-1',
@@ -231,7 +233,7 @@ describe('createAuthService', () => {
         },
       });
 
-      await service.resetPassword({ token: 'valid', password: 'a brand new password' });
+      await controller.resetPassword({ token: 'valid', password: 'a brand new password' });
       expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith('user-1');
     });
   });

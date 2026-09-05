@@ -120,8 +120,8 @@ function* walk(directory) {
  * Resolves a relative import against the composed project.
  *
  * Native ESM requires the `.js` extension on relative imports even when the
- * file on disk is `.ts`, so `./user.service.js` legitimately means
- * `user.service.ts` in the TypeScript variant.
+ * file on disk is `.ts`, so `./user.controller.js` legitimately means
+ * `user.controller.ts` in the TypeScript variant.
  */
 function resolves(composed, fromDestination, specifier) {
   const base = posix.join(posix.dirname(fromDestination), specifier);

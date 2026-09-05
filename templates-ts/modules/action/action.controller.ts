@@ -1,38 +1,61 @@
-import type { RequestHandler } from 'express';
+import type { ListOptions, Page } from '../../core/pagination.js';
+import { isUniqueViolation } from '../../db/errors.js';
+import type { Repo } from '../../db/unit-of-work.js';
 
-import type { ListQuery } from '../../core/pagination.js';
-import { paginationMeta, sendCreated, sendSuccess } from '../../core/response.js';
-
+import { actionNameTaken, actionNotFound } from './action.errors.js';
+import type { ActionRepository } from './action.repository.interface.js';
 import type { CreateActionBody, UpdateActionBody } from './action.schema.js';
-import type { ActionService } from './action.service.js';
+import type { Action } from './action.types.js';
 
-export function createActionController(service: ActionService) {
-  const list: RequestHandler = async (req, res) => {
-    const query = req.validated.query as ListQuery;
-    const { rows, total } = await service.list(query);
+/**
+ * Action (permission) administration — the logic behind every `/actions`
+ * endpoint.
+ *
+ * `action.route` above only unpacks the request; the repositories below
+ * only talk to the database. Nothing in this file may import an ORM.
+ */
 
-    sendSuccess(res, rows, { meta: paginationMeta(query.page, query.pageSize, total) });
-  };
+export interface ActionControllerDeps {
+  actions: Repo<ActionRepository>;
+}
 
-  const getById: RequestHandler = async (req, res) => {
-    const { id } = req.validated.params as { id: string };
-    sendSuccess(res, await service.getById(id));
-  };
+export function createActionController({ actions }: ActionControllerDeps) {
+  async function list(options: ListOptions): Promise<Page<Action>> {
+    return actions().list(options);
+  }
 
-  const create: RequestHandler = async (req, res) => {
-    sendCreated(res, await service.create(req.validated.body as CreateActionBody));
-  };
+  async function getById(id: string): Promise<Action> {
+    const action = await actions().findById(id);
+    if (!action) throw actionNotFound(id);
+    return action;
+  }
 
-  const update: RequestHandler = async (req, res) => {
-    const { id } = req.validated.params as { id: string };
-    sendSuccess(res, await service.update(id, req.validated.body as UpdateActionBody));
-  };
+  async function create(body: CreateActionBody): Promise<Action> {
+    try {
+      return await actions().create({ name: body.name, description: body.description ?? null });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw actionNameTaken();
+      throw error;
+    }
+  }
 
-  const remove: RequestHandler = async (req, res) => {
-    const { id } = req.validated.params as { id: string };
-    await service.remove(id);
-    sendSuccess(res, { id, deleted: true });
-  };
+  async function update(id: string, body: UpdateActionBody): Promise<Action> {
+    try {
+      const updated = await actions().update(id, body);
+      if (!updated) throw actionNotFound(id);
+      return updated;
+    } catch (error) {
+      if (isUniqueViolation(error)) throw actionNameTaken();
+      throw error;
+    }
+  }
+
+  async function remove(id: string): Promise<void> {
+    const deleted = await actions().delete(id);
+    if (!deleted) throw actionNotFound(id);
+  }
 
   return { list, getById, create, update, remove };
 }
+
+export type ActionController = ReturnType<typeof createActionController>;

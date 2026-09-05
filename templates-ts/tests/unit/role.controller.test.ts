@@ -1,17 +1,17 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { UniqueViolationError } from '../../src/db/errors.js';
+import { createRoleController } from '../../src/modules/role/role.controller.js';
 import type {
   ActionLookup,
   RoleRepository,
 } from '../../src/modules/role/role.repository.interface.js';
-import { createRoleService } from '../../src/modules/role/role.service.js';
 import type { Role } from '../../src/modules/role/role.types.js';
 import { fakeUnitOfWork, repoOf } from '../helpers/mocks.js';
 
 const role: Role = { id: 'role-1', name: 'admin', description: null };
 
-function buildService(
+function buildController(
   overrides: {
     roles?: Partial<RoleRepository>;
     actions?: Partial<ActionLookup>;
@@ -35,7 +35,7 @@ function buildService(
   return {
     roles,
     actions,
-    service: createRoleService({
+    controller: createRoleController({
       roles: repoOf(roles),
       actions: repoOf(actions),
       uow: fakeUnitOfWork,
@@ -43,9 +43,9 @@ function buildService(
   };
 }
 
-describe('createRoleService', () => {
+describe('createRoleController', () => {
   it('translates a unique violation into a 409', async () => {
-    const { service } = buildService({
+    const { controller } = buildController({
       roles: {
         create: jest.fn(async () => {
           throw new UniqueViolationError('roles_name_key');
@@ -53,29 +53,31 @@ describe('createRoleService', () => {
       },
     });
 
-    await expect(service.create({ name: 'admin', description: null })).rejects.toMatchObject({
+    await expect(controller.create({ name: 'admin', description: null })).rejects.toMatchObject({
       statusCode: 409,
       code: 'ROLE_NAME_TAKEN',
     });
   });
 
   it('rejects unknown action ids without touching the grants', async () => {
-    const { roles, service } = buildService({
+    const { roles, controller } = buildController({
       actions: { findExistingIds: jest.fn(async () => []) },
     });
 
-    await expect(service.setActions('role-1', { actionIds: ['missing'] })).rejects.toMatchObject({
-      statusCode: 422,
-      code: 'UNKNOWN_ACTIONS',
-    });
+    await expect(controller.setActions('role-1', { actionIds: ['missing'] })).rejects.toMatchObject(
+      {
+        statusCode: 422,
+        code: 'UNKNOWN_ACTIONS',
+      },
+    );
 
     expect(roles.setActions).not.toHaveBeenCalled();
   });
 
   it('raises 404 when granting actions to a role that does not exist', async () => {
-    const { service } = buildService({ roles: { findById: jest.fn(async () => null) } });
+    const { controller } = buildController({ roles: { findById: jest.fn(async () => null) } });
 
-    await expect(service.setActions('missing', { actionIds: [] })).rejects.toMatchObject({
+    await expect(controller.setActions('missing', { actionIds: [] })).rejects.toMatchObject({
       code: 'ROLE_NOT_FOUND',
     });
   });

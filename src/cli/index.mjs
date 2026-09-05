@@ -170,12 +170,47 @@ ${run('dev')}
 
 The API answers on \`/health\` immediately, before any database work.
 
-## Architecture
+## Where the code lives
 
-- \`src/core\` — Express bootstrap, logging, env validation, error handling
-- \`src/db\` — the only place an ORM may be imported
-- \`src/modules/*\` — one folder per module; modules never import each other
-- \`src/routes.${language}\` — the composition root, where modules are wired together
+\`\`\`
+src/
+  core/        Express bootstrap, logging, env validation, error handling
+  db/          the only place an ORM may be imported
+  modules/     one folder per module; modules never import each other
+  routes.${language}    the composition root, where modules are wired together
+\`\`\`
+
+## Following a request
+
+Every endpoint is three files, always in the same order:
+
+\`\`\`
+src/routes.${language}                                           which module owns which URL prefix
+  └─ src/modules/user/user.route.${language}                     path, validation, permission
+       └─ src/modules/user/user.controller.${language}           ← the logic. Start here.
+            └─ src/db/repositories/user.repository.${language}   the SQL
+\`\`\`
+
+**The controller holds the business logic.** The route file above it only
+unpacks the request and picks a status code; the repository below it only
+talks to the database.
+
+## Adding an endpoint
+
+Three files, in this order:
+
+1. \`user.schema.${language}\` — a zod schema for the body, params or query.
+2. \`user.controller.${language}\` — a plain \`async\` function with the logic. Throw an
+   \`AppError\` for anything the caller did wrong; it becomes the HTTP response.
+3. \`user.route.${language}\` — one \`router.get(...)\` line wiring path → validation →
+   permission → your controller function.
+
+Needs a new query or table?
+${
+    language === 'ts'
+      ? 'Add the method to \`user.repository.interface.ts\` first — TypeScript then\ntells you exactly which repository to implement it in.'
+      : 'Add the method to \`src/db/repositories/user.repository.js\`, then call it from\nthe controller.'
+  }
 
 Authorization is checked against **actions**, never role names, so permissions
 can change without a code change.

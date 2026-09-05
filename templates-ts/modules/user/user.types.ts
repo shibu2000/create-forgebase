@@ -2,7 +2,7 @@
  * Domain types for the user module.
  *
  * Plain data — no ORM model instances cross the repository boundary, which is
- * what keeps services and controllers identical between the Sequelize and
+ * what keeps controllers identical between the Sequelize and
  * Drizzle variants.
  */
 

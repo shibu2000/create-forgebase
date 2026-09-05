@@ -1,10 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { createMasterDataController } from '../../src/modules/master-data/master-data.controller.js';
 import type {
   MasterDataItemRepository,
   MasterDataTypeRepository,
 } from '../../src/modules/master-data/master-data.repository.interface.js';
-import { createMasterDataService } from '../../src/modules/master-data/master-data.service.js';
 import type { MasterDataType } from '../../src/modules/master-data/master-data.types.js';
 import { fakeUnitOfWork, repoOf } from '../helpers/mocks.js';
 
@@ -15,7 +15,7 @@ const cityType: MasterDataType = {
   description: null,
 };
 
-function buildService(
+function buildController(
   overrides: {
     types?: Partial<MasterDataTypeRepository>;
     items?: Partial<MasterDataItemRepository>;
@@ -40,7 +40,7 @@ function buildService(
   return {
     types,
     items,
-    service: createMasterDataService({
+    controller: createMasterDataController({
       types: repoOf(types),
       items: repoOf(items),
       uow: fakeUnitOfWork,
@@ -48,11 +48,13 @@ function buildService(
   };
 }
 
-describe('createMasterDataService', () => {
+describe('createMasterDataController', () => {
   it('refuses to delete a type that still holds items', async () => {
-    const { types, service } = buildService({ items: { countByType: jest.fn(async () => 7) } });
+    const { types, controller } = buildController({
+      items: { countByType: jest.fn(async () => 7) },
+    });
 
-    await expect(service.deleteType('CITY')).rejects.toMatchObject({
+    await expect(controller.deleteType('CITY')).rejects.toMatchObject({
       statusCode: 409,
       code: 'MASTER_DATA_TYPE_IN_USE',
       details: { itemCount: 7 },
@@ -64,17 +66,17 @@ describe('createMasterDataService', () => {
   });
 
   it('deletes a type once it is empty', async () => {
-    const { types, service } = buildService();
+    const { types, controller } = buildController();
 
-    await service.deleteType('CITY');
+    await controller.deleteType('CITY');
     expect(types.delete).toHaveBeenCalledWith('type-1');
   });
 
   it('raises 404 for an unknown type rather than returning an empty list', async () => {
-    const { service } = buildService({ types: { findByCode: jest.fn(async () => null) } });
+    const { controller } = buildController({ types: { findByCode: jest.fn(async () => null) } });
 
     await expect(
-      service.listItems('NOPE', { page: 1, pageSize: 20, activeOnly: false }),
+      controller.listItems('NOPE', { page: 1, pageSize: 20, activeOnly: false }),
     ).rejects.toMatchObject({
       statusCode: 404,
       code: 'MASTER_DATA_TYPE_NOT_FOUND',
@@ -82,7 +84,7 @@ describe('createMasterDataService', () => {
   });
 
   it('scopes item lookups to the type from the URL', async () => {
-    const { items, service } = buildService({
+    const { items, controller } = buildController({
       items: {
         findByCode: jest.fn(async () => ({
           id: 'item-1',
@@ -96,7 +98,7 @@ describe('createMasterDataService', () => {
       },
     });
 
-    await service.getItem('CITY', 'LON');
+    await controller.getItem('CITY', 'LON');
 
     // Scoped by type id, not searched globally — otherwise "LON" under
     // TOUR_TYPE could be returned for a CITY request.
