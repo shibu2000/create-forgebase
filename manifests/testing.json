@@ -27,11 +27,11 @@
   },
   "testFiles": {
     "unit": [
-      "templates-<lang>/tests/unit/user.service.test.<ext>",
-      "templates-<lang>/tests/unit/role.service.test.<ext>",
-      "templates-<lang>/tests/unit/action.service.test.<ext>",
-      "templates-<lang>/tests/unit/auth.service.test.<ext>",
-      "templates-<lang>/tests/unit/master-data.service.test.<ext>"
+      "templates-<lang>/tests/unit/user.controller.test.<ext>",
+      "templates-<lang>/tests/unit/role.controller.test.<ext>",
+      "templates-<lang>/tests/unit/action.controller.test.<ext>",
+      "templates-<lang>/tests/unit/auth.controller.test.<ext>",
+      "templates-<lang>/tests/unit/master-data.controller.test.<ext>"
     ],
     "integration": [
       "templates-<lang>/tests/integration/user.test.<ext>",
@@ -57,19 +57,19 @@
     "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest tests/integration",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "test:user": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/user.service.test.ts tests/integration/user.test.ts",
-    "test:role": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/role.service.test.ts tests/integration/role.test.ts",
-    "test:action": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/action.service.test.ts tests/integration/action.test.ts",
-    "test:auth": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/auth.service.test.ts tests/integration/auth.test.ts",
-    "test:master-data": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/master-data.service.test.ts tests/integration/master-data.test.ts"
+    "test:user": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/user.controller.test.ts tests/integration/user.test.ts",
+    "test:role": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/role.controller.test.ts tests/integration/role.test.ts",
+    "test:action": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/action.controller.test.ts tests/integration/action.test.ts",
+    "test:auth": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/auth.controller.test.ts tests/integration/auth.test.ts",
+    "test:master-data": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/master-data.controller.test.ts tests/integration/master-data.test.ts"
   },
   "js": {
     "scripts": {
-      "test:user": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/user.service.test.js tests/integration/user.test.js",
-      "test:role": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/role.service.test.js tests/integration/role.test.js",
-      "test:action": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/action.service.test.js tests/integration/action.test.js",
-      "test:auth": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/auth.service.test.js tests/integration/auth.test.js",
-      "test:master-data": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/master-data.service.test.js tests/integration/master-data.test.js"
+      "test:user": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/user.controller.test.js tests/integration/user.test.js",
+      "test:role": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/role.controller.test.js tests/integration/role.test.js",
+      "test:action": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/action.controller.test.js tests/integration/action.test.js",
+      "test:auth": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/auth.controller.test.js tests/integration/auth.test.js",
+      "test:master-data": "NODE_OPTIONS=--experimental-vm-modules jest tests/unit/master-data.controller.test.js tests/integration/master-data.test.js"
     },
     "devDependencies": {
       "@types/supertest": null,

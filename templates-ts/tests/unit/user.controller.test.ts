@@ -1,16 +1,16 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { UniqueViolationError } from '../../src/db/errors.js';
+import { createUserController } from '../../src/modules/user/user.controller.js';
 import type {
   RoleLookup,
   UserRepository,
 } from '../../src/modules/user/user.repository.interface.js';
-import { createUserService } from '../../src/modules/user/user.service.js';
 import type { User } from '../../src/modules/user/user.types.js';
 import { fakeHasher, fakeUnitOfWork, repoOf } from '../helpers/mocks.js';
 
 /**
- * Unit tests: the service in isolation, with mocked repositories.
+ * Unit tests: the controller in isolation, with mocked repositories.
  *
  * These assert *decisions* — which error is raised, what gets called, in what
  * order. Whether a rollback actually rolls back is a question about Postgres,
@@ -26,7 +26,7 @@ const user: User = {
   updatedAt: new Date(),
 };
 
-function buildService(
+function buildController(
   overrides: {
     users?: Partial<UserRepository>;
     roles?: Partial<RoleLookup>;
@@ -51,7 +51,7 @@ function buildService(
   return {
     users,
     roles,
-    service: createUserService({
+    controller: createUserController({
       users: repoOf(users),
       roles: repoOf(roles),
       uow: fakeUnitOfWork,
@@ -60,12 +60,12 @@ function buildService(
   };
 }
 
-describe('createUserService', () => {
+describe('createUserController', () => {
   describe('create', () => {
     it('hashes the password before it reaches the repository', async () => {
-      const { users, service } = buildService();
+      const { users, controller } = buildController();
 
-      await service.create({
+      await controller.create({
         email: 'ada@example.com',
         password: 'a perfectly fine password',
         isActive: true,
@@ -78,9 +78,9 @@ describe('createUserService', () => {
     });
 
     it('never passes the plaintext password to the repository', async () => {
-      const { users, service } = buildService();
+      const { users, controller } = buildController();
 
-      await service.create({
+      await controller.create({
         email: 'ada@example.com',
         password: 'a perfectly fine password',
         isActive: true,
@@ -91,7 +91,7 @@ describe('createUserService', () => {
     });
 
     it('translates a unique violation into a 409', async () => {
-      const { service } = buildService({
+      const { controller } = buildController({
         users: {
           create: jest.fn(async () => {
             throw new UniqueViolationError('users_email_key');
@@ -100,17 +100,17 @@ describe('createUserService', () => {
       });
 
       await expect(
-        service.create({ email: 'ada@example.com', password: 'a password', isActive: true }),
+        controller.create({ email: 'ada@example.com', password: 'a password', isActive: true }),
       ).rejects.toMatchObject({ statusCode: 409, code: 'EMAIL_TAKEN' });
     });
 
     it('rejects unknown role ids before creating anything', async () => {
-      const { users, service } = buildService({
+      const { users, controller } = buildController({
         roles: { findExistingIds: jest.fn(async () => []) },
       });
 
       await expect(
-        service.create({
+        controller.create({
           email: 'ada@example.com',
           password: 'a password',
           isActive: true,
@@ -124,12 +124,12 @@ describe('createUserService', () => {
     });
 
     it('reports exactly which role ids were unknown', async () => {
-      const { service } = buildService({
+      const { controller } = buildController({
         roles: { findExistingIds: jest.fn(async () => ['known']) },
       });
 
       await expect(
-        service.create({
+        controller.create({
           email: 'ada@example.com',
           password: 'a password',
           isActive: true,
@@ -141,16 +141,16 @@ describe('createUserService', () => {
 
   describe('update', () => {
     it('only hashes a password when one was supplied', async () => {
-      const { service } = buildService();
+      const { controller } = buildController();
 
-      await service.update('user-1', { email: 'new@example.com' });
+      await controller.update('user-1', { email: 'new@example.com' });
       expect(fakeHasher.hash).not.toHaveBeenCalled();
     });
 
     it('raises 404 when the row does not exist', async () => {
-      const { service } = buildService({ users: { update: jest.fn(async () => null) } });
+      const { controller } = buildController({ users: { update: jest.fn(async () => null) } });
 
-      await expect(service.update('missing', { isActive: false })).rejects.toMatchObject({
+      await expect(controller.update('missing', { isActive: false })).rejects.toMatchObject({
         statusCode: 404,
         code: 'USER_NOT_FOUND',
       });
@@ -159,9 +159,9 @@ describe('createUserService', () => {
 
   describe('getEffectiveActions', () => {
     it('raises 404 rather than returning an empty list for an unknown user', async () => {
-      const { service } = buildService({ users: { findById: jest.fn(async () => null) } });
+      const { controller } = buildController({ users: { findById: jest.fn(async () => null) } });
 
-      await expect(service.getEffectiveActions('missing')).rejects.toMatchObject({
+      await expect(controller.getEffectiveActions('missing')).rejects.toMatchObject({
         code: 'USER_NOT_FOUND',
       });
     });

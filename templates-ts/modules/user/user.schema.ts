@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /**
  * Request validation for the user module. Every route runs one of these
- * through `validate()` before the controller, so controllers and services can
+ * through `validate()` before the controller, so controllers can
  * treat their input as already well-formed.
  */
 

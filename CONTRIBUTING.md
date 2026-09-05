@@ -69,8 +69,10 @@ Without Docker it says so and skips the suites rather than passing quietly.
 
 ## Adding a module
 
-1. Write `templates-ts/modules/<name>/` — route, controller, service, schema,
-   errors, types, repository interface. Copy the shape of an existing module.
+1. Write `templates-ts/modules/<name>/` — route, controller, schema, errors,
+   types, repository interface. Copy the shape of an existing module: the
+   route file wires path → validation → permission → controller, and the
+   controller holds the logic.
 2. Add repositories and models under both `templates-ts/sequelize/db/` and
    `templates-ts/drizzle/db/`, plus a migration for each.
 3. Write `manifests/<name>.json`: its files, dependencies, env vars, and the
@@ -84,7 +86,7 @@ Without Docker it says so and skips the suites rather than passing quietly.
    ```
    and give the manifest a `"region": "<name>"`. The CLI deletes marked regions
    for modules that were not chosen.
-5. Add `tests/unit/<name>.service.test.ts` and `tests/integration/<name>.test.ts`,
+5. Add `tests/unit/<name>.controller.test.ts` and `tests/integration/<name>.test.ts`,
    and list them under `"tests"` in the manifest so they are removed too.
 6. Register it in `selectableModules()` in `src/cli/manifests.mjs`.
 7. Run the deep matrix.

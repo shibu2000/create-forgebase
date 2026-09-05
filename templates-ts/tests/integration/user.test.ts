@@ -109,7 +109,7 @@ describe('GET /users/:id/actions', () => {
 });
 
 describe('validation and authorization', () => {
-  it('rejects a malformed id before the service runs', async () => {
+  it('rejects a malformed id before the controller runs', async () => {
     const response = await api.get('/users/not-a-uuid').expect(422);
 
     expect(response.body.error.code).toBe('VALIDATION_ERROR');

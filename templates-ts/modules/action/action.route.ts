@@ -2,47 +2,77 @@ import { Router } from 'express';
 
 import type { RouteGuards } from '../../core/middleware/auth.types.js';
 import { validate } from '../../core/middleware/validate.js';
-import { listQuery, uuidParam } from '../../core/pagination.js';
+import { type ListQuery, listQuery, uuidParam } from '../../core/pagination.js';
+import { paginationMeta, sendCreated, sendSuccess } from '../../core/response.js';
 
-import { createActionController } from './action.controller.js';
-import { createActionBody, updateActionBody } from './action.schema.js';
-import { type ActionServiceDeps, createActionService } from './action.service.js';
+import { type ActionControllerDeps, createActionController } from './action.controller.js';
+import {
+  type CreateActionBody,
+  createActionBody,
+  type UpdateActionBody,
+  updateActionBody,
+} from './action.schema.js';
 
-export interface ActionRouterDeps extends ActionServiceDeps, RouteGuards {}
+/**
+ * Route table for `/actions`.
+ *
+ * Path, validation, permission, controller call — see `action.controller`
+ * for what each endpoint actually does.
+ */
 
-export function createActionRouter({
-  authenticate,
-  authorize,
-  ...serviceDeps
-}: ActionRouterDeps): Router {
+export interface ActionRouterDeps extends ActionControllerDeps, RouteGuards {}
+
+export function createActionRouter({ authenticate, authorize, ...deps }: ActionRouterDeps): Router {
   const router = Router();
-  const controller = createActionController(createActionService(serviceDeps));
+  const controller = createActionController(deps);
 
   router.use(authenticate);
 
-  router.get('/', validate({ query: listQuery }), authorize('action:read'), controller.list);
+  router.get('/', validate({ query: listQuery }), authorize('action:read'), async (req, res) => {
+    const query = req.validated.query as ListQuery;
+    const { rows, total } = await controller.list(query);
+
+    sendSuccess(res, rows, { meta: paginationMeta(query.page, query.pageSize, total) });
+  });
 
   router.post(
     '/',
     validate({ body: createActionBody }),
     authorize('action:create'),
-    controller.create,
+    async (req, res) => {
+      sendCreated(res, await controller.create(req.validated.body as CreateActionBody));
+    },
   );
 
-  router.get('/:id', validate({ params: uuidParam }), authorize('action:read'), controller.getById);
+  router.get(
+    '/:id',
+    validate({ params: uuidParam }),
+    authorize('action:read'),
+    async (req, res) => {
+      const { id } = req.validated.params as { id: string };
+      sendSuccess(res, await controller.getById(id));
+    },
+  );
 
   router.patch(
     '/:id',
     validate({ params: uuidParam, body: updateActionBody }),
     authorize('action:update'),
-    controller.update,
+    async (req, res) => {
+      const { id } = req.validated.params as { id: string };
+      sendSuccess(res, await controller.update(id, req.validated.body as UpdateActionBody));
+    },
   );
 
   router.delete(
     '/:id',
     validate({ params: uuidParam }),
     authorize('action:delete'),
-    controller.remove,
+    async (req, res) => {
+      const { id } = req.validated.params as { id: string };
+      await controller.remove(id);
+      sendSuccess(res, { id, deleted: true });
+    },
   );
 
   return router;

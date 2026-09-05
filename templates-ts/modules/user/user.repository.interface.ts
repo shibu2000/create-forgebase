@@ -13,7 +13,7 @@ import type {
  *
  * This is the seam between business logic and persistence: the Sequelize and
  * Drizzle implementations satisfy it identically, so switching ORMs changes
- * nothing in `user.service.ts` or above.
+ * nothing in `user.controller` or above.
  */
 export interface UserRepository {
   list(options: ListOptions): Promise<Page<User>>;
