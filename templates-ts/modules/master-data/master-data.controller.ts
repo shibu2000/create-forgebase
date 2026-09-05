@@ -1,8 +1,13 @@
-import type { RequestHandler } from 'express';
+import { AppError } from '../../core/errors/AppError.js';
+import type { ListOptions, Page } from '../../core/pagination.js';
+import { isUniqueViolation } from '../../db/errors.js';
+import type { Repo, UnitOfWork } from '../../db/unit-of-work.js';
 
-import type { ListQuery } from '../../core/pagination.js';
-import { paginationMeta, sendCreated, sendSuccess } from '../../core/response.js';
-
+import { itemCodeTaken, itemNotFound, typeCodeTaken, typeNotFound } from './master-data.errors.js';
+import type {
+  MasterDataItemRepository,
+  MasterDataTypeRepository,
+} from './master-data.repository.interface.js';
 import type {
   CreateItemBody,
   CreateTypeBody,
@@ -10,67 +15,142 @@ import type {
   UpdateItemBody,
   UpdateTypeBody,
 } from './master-data.schema.js';
-import type { MasterDataService } from './master-data.service.js';
+import type { MasterDataItem, MasterDataType } from './master-data.types.js';
 
-export function createMasterDataController(service: MasterDataService) {
-  const listTypes: RequestHandler = async (req, res) => {
-    const query = req.validated.query as ListQuery;
-    const { rows, total } = await service.listTypes(query);
+/**
+ * Reference data: one CRUD implementation serving every kind of lookup list a
+ * project needs — the logic behind every `/master-data` endpoint.
+ *
+ * `master-data.route` above only unpacks the request; the repositories
+ * below only talk to the database. Nothing in this file may import an ORM.
+ */
 
-    sendSuccess(res, rows, { meta: paginationMeta(query.page, query.pageSize, total) });
-  };
+export interface MasterDataControllerDeps {
+  types: Repo<MasterDataTypeRepository>;
+  items: Repo<MasterDataItemRepository>;
+  uow: UnitOfWork;
+}
 
-  const getType: RequestHandler = async (req, res) => {
-    const { code } = req.validated.params as { code: string };
-    sendSuccess(res, await service.getType(code));
-  };
+export function createMasterDataController({ types, items, uow }: MasterDataControllerDeps) {
+  /** Every item route is scoped by type code, so this runs first each time. */
+  async function requireType(code: string): Promise<MasterDataType> {
+    const type = await types().findByCode(code);
+    if (!type) throw typeNotFound(code);
+    return type;
+  }
 
-  const createType: RequestHandler = async (req, res) => {
-    sendCreated(res, await service.createType(req.validated.body as CreateTypeBody));
-  };
+  // ------------------------------------------------------------- types
 
-  const updateType: RequestHandler = async (req, res) => {
-    const { code } = req.validated.params as { code: string };
-    sendSuccess(res, await service.updateType(code, req.validated.body as UpdateTypeBody));
-  };
+  async function listTypes(options: ListOptions): Promise<Page<MasterDataType>> {
+    return types().list(options);
+  }
 
-  const deleteType: RequestHandler = async (req, res) => {
-    const { code } = req.validated.params as { code: string };
-    await service.deleteType(code);
-    sendSuccess(res, { code, deleted: true });
-  };
+  async function getType(code: string): Promise<MasterDataType> {
+    return requireType(code);
+  }
 
-  const listItems: RequestHandler = async (req, res) => {
-    const { code } = req.validated.params as { code: string };
-    const query = req.validated.query as ItemListQuery;
-    const { rows, total } = await service.listItems(code, query);
+  async function createType(body: CreateTypeBody): Promise<MasterDataType> {
+    try {
+      return await types().create({
+        code: body.code,
+        name: body.name,
+        description: body.description ?? null,
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw typeCodeTaken();
+      throw error;
+    }
+  }
 
-    sendSuccess(res, rows, { meta: paginationMeta(query.page, query.pageSize, total) });
-  };
+  async function updateType(code: string, body: UpdateTypeBody): Promise<MasterDataType> {
+    const type = await requireType(code);
 
-  const getItem: RequestHandler = async (req, res) => {
-    const { code, itemCode } = req.validated.params as { code: string; itemCode: string };
-    sendSuccess(res, await service.getItem(code, itemCode));
-  };
+    const updated = await types().update(type.id, body);
+    if (!updated) throw typeNotFound(code);
+    return updated;
+  }
 
-  const createItem: RequestHandler = async (req, res) => {
-    const { code } = req.validated.params as { code: string };
-    sendCreated(res, await service.createItem(code, req.validated.body as CreateItemBody));
-  };
+  /**
+   * Refuses to delete a type that still holds items.
+   *
+   * The database would cascade happily, but silently discarding a hundred
+   * cities because someone removed the "CITY" type is not a recoverable
+   * mistake. Emptying it first has to be deliberate.
+   */
+  async function deleteType(code: string): Promise<void> {
+    await uow.run(async (tx) => {
+      const type = await types(tx).findByCode(code);
+      if (!type) throw typeNotFound(code);
 
-  const updateItem: RequestHandler = async (req, res) => {
-    const { code, itemCode } = req.validated.params as { code: string; itemCode: string };
-    sendSuccess(
-      res,
-      await service.updateItem(code, itemCode, req.validated.body as UpdateItemBody),
-    );
-  };
+      const itemCount = await items(tx).countByType(type.id);
+      if (itemCount > 0) {
+        throw new AppError(
+          409,
+          'MASTER_DATA_TYPE_IN_USE',
+          `Type "${code}" still has ${itemCount} item(s); delete them first`,
+          { itemCount },
+        );
+      }
 
-  const deleteItem: RequestHandler = async (req, res) => {
-    const { code, itemCode } = req.validated.params as { code: string; itemCode: string };
-    await service.deleteItem(code, itemCode);
-    sendSuccess(res, { code: itemCode, deleted: true });
-  };
+      await types(tx).delete(type.id);
+    });
+  }
+
+  // ------------------------------------------------------------- items
+
+  async function listItems(typeCode: string, query: ItemListQuery): Promise<Page<MasterDataItem>> {
+    const type = await requireType(typeCode);
+    return items().listByType(type.id, query);
+  }
+
+  async function getItem(typeCode: string, itemCode: string): Promise<MasterDataItem> {
+    const type = await requireType(typeCode);
+
+    const item = await items().findByCode(type.id, itemCode);
+    if (!item) throw itemNotFound(typeCode, itemCode);
+    return item;
+  }
+
+  async function createItem(typeCode: string, body: CreateItemBody): Promise<MasterDataItem> {
+    const type = await requireType(typeCode);
+
+    try {
+      return await items().create({
+        typeId: type.id,
+        code: body.code,
+        label: body.label,
+        meta: body.meta ?? null,
+        sortOrder: body.sortOrder,
+        isActive: body.isActive,
+      });
+    } catch (error) {
+      if (isUniqueViolation(error)) throw itemCodeTaken();
+      throw error;
+    }
+  }
+
+  async function updateItem(
+    typeCode: string,
+    itemCode: string,
+    body: UpdateItemBody,
+  ): Promise<MasterDataItem> {
+    const existing = await getItem(typeCode, itemCode);
+
+    const updated = await items().update(existing.id, {
+      label: body.label,
+      meta: body.meta,
+      sortOrder: body.sortOrder,
+      isActive: body.isActive,
+    });
+
+    if (!updated) throw itemNotFound(typeCode, itemCode);
+    return updated;
+  }
+
+  async function deleteItem(typeCode: string, itemCode: string): Promise<void> {
+    const existing = await getItem(typeCode, itemCode);
+    await items().delete(existing.id);
+  }
 
   return {
     listTypes,
@@ -85,3 +165,5 @@ export function createMasterDataController(service: MasterDataService) {
     deleteItem,
   };
 }
+
+export type MasterDataController = ReturnType<typeof createMasterDataController>;

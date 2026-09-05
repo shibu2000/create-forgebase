@@ -1,6 +1,6 @@
 {
   "name": "create-forgebase",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Scaffold a production-ready Express + PostgreSQL backend, in TypeScript or JavaScript, with Sequelize or Drizzle.",
   "keywords": [
     "create",

@@ -1,60 +1,129 @@
-import type { RequestHandler } from 'express';
+import type { ListOptions, Page } from '../../core/pagination.js';
+import { isUniqueViolation } from '../../db/errors.js';
+import type { Repo, TxContext, UnitOfWork } from '../../db/unit-of-work.js';
+import type { PasswordHasher } from '../../services/password/password.service.js';
 
-import type { ListQuery } from '../../core/pagination.js';
-import { paginationMeta, sendCreated, sendSuccess } from '../../core/response.js';
-
+import { emailTaken, unknownRoles, userNotFound } from './user.errors.js';
+import type { RoleLookup, UserRepository } from './user.repository.interface.js';
 import type { CreateUserBody, SetUserRolesBody, UpdateUserBody } from './user.schema.js';
-import type { UserService } from './user.service.js';
+import type { User, UserWithRoles } from './user.types.js';
 
 /**
- * Translates HTTP to service calls and back. No business logic, no data
- * access — if a decision is being made here, it belongs in the service.
+ * User administration — the logic behind every `/users` endpoint.
  *
- * Errors are thrown, not caught: Express 5 forwards a rejected handler to the
- * centralised error middleware, which owns the error envelope.
+ * This is the only file that decides anything for this module. `user.route`
+ * above only unpacks the request and picks a status code; the repositories
+ * below only talk to the database. Nothing in this file may import an ORM.
  */
-export function createUserController(service: UserService) {
-  const list: RequestHandler = async (req, res) => {
-    const query = req.validated.query as ListQuery;
-    const { rows, total } = await service.list(query);
 
-    sendSuccess(res, rows, { meta: paginationMeta(query.page, query.pageSize, total) });
-  };
+export interface UserControllerDeps {
+  users: Repo<UserRepository>;
+  /** Only used to reject unknown role ids — see `RoleLookup`. */
+  roles: Repo<RoleLookup>;
+  uow: UnitOfWork;
+  hasher: PasswordHasher;
+}
 
-  const getById: RequestHandler = async (req, res) => {
-    const { id } = req.validated.params as { id: string };
-    sendSuccess(res, await service.getById(id));
-  };
+export function createUserController({ users, roles, uow, hasher }: UserControllerDeps) {
+  /**
+   * Fails with a 422 naming exactly which ids were unknown, rather than
+   * letting a foreign key violation surface as a 500.
+   */
+  async function assertRolesExist(roleIds: string[], tx?: TxContext): Promise<void> {
+    if (roleIds.length === 0) return;
 
-  const create: RequestHandler = async (req, res) => {
-    sendCreated(res, await service.create(req.validated.body as CreateUserBody));
-  };
+    const existing = new Set(await roles(tx).findExistingIds(roleIds));
+    const missing = roleIds.filter((id) => !existing.has(id));
 
-  const update: RequestHandler = async (req, res) => {
-    const { id } = req.validated.params as { id: string };
-    sendSuccess(res, await service.update(id, req.validated.body as UpdateUserBody));
-  };
+    if (missing.length > 0) throw unknownRoles(missing);
+  }
 
-  const remove: RequestHandler = async (req, res) => {
-    const { id } = req.validated.params as { id: string };
-    await service.remove(id);
+  async function list(options: ListOptions): Promise<Page<User>> {
+    return users().list(options);
+  }
 
-    // 200 with an envelope rather than a bare 204, so every response from
-    // this API can be branched on with the same `success` field.
-    sendSuccess(res, { id, deleted: true });
-  };
+  async function getById(id: string): Promise<UserWithRoles> {
+    const user = await users().findWithRoles(id);
+    if (!user) throw userNotFound(id);
+    return user;
+  }
 
-  const setRoles: RequestHandler = async (req, res) => {
-    const { id } = req.validated.params as { id: string };
-    sendSuccess(res, await service.setRoles(id, req.validated.body as SetUserRolesBody));
-  };
+  async function create(body: CreateUserBody): Promise<UserWithRoles> {
+    const passwordHash = await hasher.hash(body.password);
+    const roleIds = body.roleIds ?? [];
 
-  const getEffectiveActions: RequestHandler = async (req, res) => {
-    const { id } = req.validated.params as { id: string };
-    const actions = await service.getEffectiveActions(id);
+    // Creating the user and assigning their roles is one atomic step — a
+    // user that exists without the roles they were meant to have is not a
+    // state worth persisting.
+    const created = await uow.run(async (tx) => {
+      await assertRolesExist(roleIds, tx);
 
-    sendSuccess(res, { actions }, { meta: { count: actions.length } });
-  };
+      let user: User;
+      try {
+        user = await users(tx).create({
+          email: body.email,
+          passwordHash,
+          isActive: body.isActive,
+        });
+      } catch (error) {
+        if (isUniqueViolation(error)) throw emailTaken();
+        throw error;
+      }
+
+      if (roleIds.length > 0) await users(tx).setRoles(user.id, roleIds);
+      return user;
+    });
+
+    return getById(created.id);
+  }
+
+  async function update(id: string, body: UpdateUserBody): Promise<User> {
+    const passwordHash = body.password ? await hasher.hash(body.password) : undefined;
+
+    try {
+      const updated = await users().update(id, {
+        email: body.email,
+        isActive: body.isActive,
+        passwordHash,
+      });
+
+      if (!updated) throw userNotFound(id);
+      return updated;
+    } catch (error) {
+      if (isUniqueViolation(error)) throw emailTaken();
+      throw error;
+    }
+  }
+
+  async function remove(id: string): Promise<void> {
+    const deleted = await users().delete(id);
+    if (!deleted) throw userNotFound(id);
+  }
+
+  async function setRoles(id: string, body: SetUserRolesBody): Promise<UserWithRoles> {
+    await uow.run(async (tx) => {
+      const user = await users(tx).findById(id);
+      if (!user) throw userNotFound(id);
+
+      await assertRolesExist(body.roleIds, tx);
+      await users(tx).setRoles(id, body.roleIds);
+    });
+
+    return getById(id);
+  }
+
+  /**
+   * The union of action names across every role the user holds — the same
+   * list `authorize()` checks a request against.
+   */
+  async function getEffectiveActions(id: string): Promise<string[]> {
+    const user = await users().findById(id);
+    if (!user) throw userNotFound(id);
+
+    return users().findEffectiveActionNames(id);
+  }
 
   return { list, getById, create, update, remove, setRoles, getEffectiveActions };
 }
+
+export type UserController = ReturnType<typeof createUserController>;

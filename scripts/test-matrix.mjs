@@ -85,9 +85,9 @@ function checkStructure(combo, directory, { modules }) {
         fail(combo, `master-data referenced in ${file} after being deselected`);
       }
     }
-  } else if (!fileSet.has('src/modules/master-data/master-data.service.ts') &&
-             !fileSet.has('src/modules/master-data/master-data.service.js')) {
-    fail(combo, 'master-data was selected but its service is missing');
+  } else if (!fileSet.has('src/modules/master-data/master-data.controller.ts') &&
+             !fileSet.has('src/modules/master-data/master-data.controller.js')) {
+    fail(combo, 'master-data was selected but its controller is missing');
   }
 
   // 4. package.json must be valid and its scripts must point at real files.

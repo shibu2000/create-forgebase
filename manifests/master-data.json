@@ -15,7 +15,7 @@
   },
   "region": "master-data",
   "tests": [
-    "tests/unit/master-data.service.test.<ext>",
+    "tests/unit/master-data.controller.test.<ext>",
     "tests/integration/master-data.test.<ext>"
   ],
   "variants": {

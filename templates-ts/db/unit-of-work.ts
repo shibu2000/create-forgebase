@@ -1,7 +1,7 @@
 /**
  * The transaction seam.
  *
- * Services orchestrate transactions that span more than one module — creating
+ * Controllers orchestrate transactions that span more than one module — creating
  * a user and assigning their roles has to be atomic — without ever learning
  * what a transaction actually is. `TxContext` is deliberately opaque: only
  * the ORM adapter that produced it can interpret it.
@@ -33,7 +33,7 @@ export interface UnitOfWork {
  *
  * Called with no argument it reads and writes outside any transaction; called
  * with a `TxContext` it is bound to that transaction. This is what lets one
- * module's service enlist another module's repository in its transaction
+ * module's controller enlist another module's repository in its transaction
  * without importing that module's ORM code.
  */
 export type Repo<T> = (tx?: TxContext) => T;

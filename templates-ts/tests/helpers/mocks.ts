@@ -5,7 +5,7 @@ import type { Repo, TxContext, UnitOfWork } from '../../src/db/unit-of-work.js';
 /**
  * Test doubles for unit tests.
  *
- * Services receive repositories as `Repo<T>` factories, so a unit test hands
+ * Controllers receive repositories as `Repo<T>` factories, so a unit test hands
  * them a function returning an object of `jest.fn()`s — no container to
  * reset, no database, no ORM. That the seam is this easy to fake is the
  * payoff for injecting dependencies rather than importing them.
